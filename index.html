@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+        <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        
+        <link rel="stylesheet" href="static/css/styles.css">
+        
+        <title>TimeTimer</title>
+    </head>
+    <body>
+        <div class="clock">
+            <div class="clock-background">
+                <div class="mask-left" id="mask-left"></div>
+                <div class="mask-right" id="mask-right"></div>
+            </div>
+            <div class="handles">
+                <div class="mark-hand" id="mark-hand"></div>
+            </div>
+            <!--<div class="center-circle"></div>-->
+        </div>
+
+        <form id="formTimer" action="/datapost" method="post">
+            <input type="number" value="30" min="1" max="60" id="time-input">
+            <input type="text" id="tag-input">
+            <button type="submit" id="submit-time" onclick="loadTimer()">Inizia Timer</button>
+        </form>
+
+        <div>
+            <h1 id="cd"></h1>
+            <button onclick="ReloadData()">Carica</button>
+        </div>
+    </body>
+
+
+    <script>
+        function loadTimer() {
+            var time = document.getElementById("time-input").value * 60;
+            var left_mask = document.getElementById("mask-left");
+            var right_mask = document.getElementById("mask-right");
+            var mark_hand = document.getElementById("mark-hand");
+
+            var funcid = setInterval(moveTimer, 1000);
+
+            
+            function moveTimer() {
+                if (time <= 0) { 
+                    right_mask.style.transform = "rotate(180deg)";
+                    clearInterval(funcid);
+                }
+                if (time <= 1800) {
+                    left_mask.style.transform = "rotate(" + (180 - (180 / (1800 / time))) + "deg)";
+                    right_mask.style.backgroundColor = "white";
+                } else {
+                    left_mask.style.transform = "rotate(0deg)"
+                    right_mask.style.backgroundColor = "red";
+                    right_mask.style.transform = "rotate(" + (360 - (360 / (3600 / time))) + "deg)";
+                }
+
+                //mark_hand.style.transform = 
+                
+                time -= 1;
+            }
+            
+        }
+
+
+        function ReloadData() {
+            makeCorsRequest('/dataget');
+        }
+
+
+        // this is the id of the form
+        $("#formTimer").submit(function(e) {
+
+            e.preventDefault(); // avoid to execute the actual submit of the form.
+
+            var form = $(this);
+
+            makeCorsPost(form);
+
+            /*$.ajax({
+                type: "POST",
+                url: actionUrl,
+                data: form.serialize(), // serializes the form's elements.
+                success: function(data)
+                {
+                    console.log(data); // show response from the php script.
+                }
+            });*/
+
+        });
+
+
+        // Create the XHR object.
+        function createCORSRequest(method, url) {
+            var xhr = new XMLHttpRequest();
+            if ("withCredentials" in xhr) {
+                // XHR for Chrome/Firefox/Opera/Safari.
+                xhr.open(method, url, true);
+            } else if (typeof XDomainRequest != "undefined") {
+                // XDomainRequest for IE.
+                xhr = new XDomainRequest();
+                xhr.open(method, url);
+            } else {
+                // CORS not supported.
+                xhr = null;
+            }
+            return xhr;
+        }
+
+
+        // Function to get data from the form, to call just befor starting the POST HTTP call
+        function getJsonForm(form){
+
+            // taking all input values of the element with id eventsform and serilizing them using the JQUERY serializeArray function
+            var jsonform = $("#" + form.attr('id') + " input").toArray();
+
+            // redefine the structure the data obtained from the form
+
+            jsondata = new Object;
+            for (i=0; i<jsonform.length; i++) {
+                key = jsonform[i].id;
+                val = jsonform[i].value;
+                jsondata[key] = val;
+            }
+
+            //Convert the Object in a string befor using it in the HTTP call
+            return JSON.stringify(jsondata);
+        }
+
+
+        // function to POST data on the DB
+        function makeCorsPost(form) {
+
+            // call the function returning data from the form
+            var jsondata = getJsonForm(form);
+
+            var xhr = createCORSRequest('POST', form.attr('action'));
+            if (!xhr) {
+                alert('CORS not supported');
+                return;
+            }
+
+            // Response handlers.
+            xhr.onload = function() {
+                var status = xhr.status;
+                console.log("makeCorsPost: " + status);
+            }
+
+            xhr.onerror = function() {
+                alert('Woops, there was an error making the request.');
+            };
+
+            xhr.setRequestHeader("Content-Type", "application/json");
+            xhr.send(jsondata);
+
+        }
+
+        
+        
+        
+        // Function to get data from the DB
+        function makeCorsRequest(url) {
+
+            var xhr = createCORSRequest('GET', url);
+            if (!xhr) {
+                alert('CORS not supported');
+                return;
+            }
+
+            // Response handlers.
+            xhr.onload = function() {
+                var rq = xhr.responseText;
+                var result = JSON.parse(rq);
+                var status = xhr.status;
+                console.log("makeCorsRequest: " + status);
+                
+                populateHistory(result);
+
+            };
+
+            xhr.onerror = function() {
+                alert('Woops, there was an error making the request.');
+            };
+
+            xhr.send();
+        }
+
+
+        function populateHistory(jsondata) {
+            console.log(jsondata);
+        }
+
+
+    </script>
+</html>
