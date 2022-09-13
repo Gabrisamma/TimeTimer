@@ -27,17 +27,12 @@ app.get('/', function (req, res) {
 });
 
 app.post('/datapost', function(req, res){
-    console.log(req.body['time-input']);
-    fixtures.InsertTime(req.body['time-input'], null, req.body['tag-input']);
-    //res.send(JSON.stringify(req.body));
+    fixtures.InsertTime(req.body['time-input'], req.body['remaining-time'], req.body['tag-input']);
 });
 
+app.get('/dataget', fixtures.GetAllTimes);
 
-app.get('/dataget', function(req, res){
-    /*console.log(req.body);
-    res.send(JSON.stringify(req.body));*/
-    fixtures.GetAllTimes();
-});
+app.get('/deleteAll', fixtures.DeleteAllTimes);
 
 
 var port = 8080;

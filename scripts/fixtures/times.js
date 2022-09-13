@@ -8,7 +8,7 @@ exports.InsertTime = function(total, remaining, tag) {
     }
 
     var newJson = {
-        "totalTime": total,
+        "totalTime": total * 60,
         "remainingTime": remaining,
         "tag": tag
     };
@@ -20,6 +20,17 @@ exports.InsertTime = function(total, remaining, tag) {
 exports.GetAllTimes = function(req, res, next) {
     Time.find({}, function(err, times) {
         if (err) return next(err);
-        console.log(times);
+        res.send(JSON.stringify(times));
     })
+}
+
+
+exports.DeleteAllTimes = function(req, res, next) {
+    Time.deleteMany({}, function(err) {
+        if (err) {
+            return next(err)
+        } else {
+            res.redirect('/');
+        }
+    });
 }

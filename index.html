@@ -5,39 +5,87 @@
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
         <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.1/dist/css/bootstrap.min.css" rel="stylesheet" integrity="sha384-iYQeCzEYFbKjA/T2uDLTpkwGzCiq6soy8tYaI1GyVh/UjpbCx/TYkiZhlZB6+fzT" crossorigin="anonymous">
         
+        <link rel="shortcut icon" href="#">
         <link rel="stylesheet" href="static/css/styles.css">
         
         <title>TimeTimer</title>
     </head>
     <body>
-        <div class="clock">
-            <div class="clock-background">
-                <div class="mask-left" id="mask-left"></div>
-                <div class="mask-right" id="mask-right"></div>
+        <div class="lefthalf-screen">
+            <div class="timer-container">
+                <div class="clock">
+                    <img src="static/images/ios_clock.svg" alt="Timer" class="clock-image">
+                    <div class="clock-background">
+                        <div class="mask-left" id="mask-left"></div>
+                        <div class="mask-right" id="mask-right"></div>
+                        <div class="mark-hand" id="mark-hand"></div>
+                    </div>
+                    <div class="center-circle"></div>
+                </div>
             </div>
-            <div class="handles">
-                <div class="mark-hand" id="mark-hand"></div>
+
+            <div class="form-container">
+                <form id="formTimer" action="/datapost" method="post">
+                    <div class="inputs-form">
+                        <div class="input-group input-group-lg">
+                            <label for="time-input" class="input-group-text">Tempo</label>
+                            <input type="number" id="time-input" class="time-input form-control" value=30 min=1 max=60>
+                        </div>
+                        
+                        <div class="input-group input-group-lg">
+                            <label for="tag-input" class="input-group-text">Tag</label>
+                            <input type="text" id="tag-input" class="form-control">
+                        </div>
+
+                        <input type="hidden" id ="remaining-time">
+                    </div>
+                    
+                    <div class="buttons-form">
+                        <button id="start-timer" type="button" class="btn btn-primary" onclick="loadTimer()">Inizia Timer</button>
+                        <button type="submit" id="submit-time" class="btn btn-danger">Stop</button>
+                    </div>
+                </form>
             </div>
-            <!--<div class="center-circle"></div>-->
         </div>
 
-        <form id="formTimer" action="/datapost" method="post">
-            <input type="number" value="30" min="1" max="60" id="time-input">
-            <input type="text" id="tag-input">
-            <button type="submit" id="submit-time" onclick="loadTimer()">Inizia Timer</button>
-        </form>
+
+        <table id="history-table" class="table table-striped table-history">
+            <thead>
+                <th>Tempo Inserito</th>
+                <th>Tempo Rimanente</th>
+                <th>Tag</th>
+            </thead>
+            
+            <tbody class="table-body">
+
+            </tbody>
+        </table>
+
+        <!--<form action="/deleteAll">
+            <button class="btn btn-danger">Delete</button>
+        </form>-->
 
         <div>
             <h1 id="cd"></h1>
-            <button onclick="ReloadData()">Carica</button>
+            <button onclick="ReloadData()" aria-label="Reload Button"><img class="reload-button" src="/static/images/reload.jpg" alt="reload"></button>
         </div>
     </body>
 
 
     <script>
+        var remainingTime;
+
+
+        $(window).on('load', function() {
+            makeCorsRequest('/dataget');
+        });
+
+        
         function loadTimer() {
-            var time = document.getElementById("time-input").value * 60;
+            remainingTime = $('#time-input').val() * 60;
+
             var left_mask = document.getElementById("mask-left");
             var right_mask = document.getElementById("mask-right");
             var mark_hand = document.getElementById("mark-hand");
@@ -46,22 +94,25 @@
 
             
             function moveTimer() {
-                if (time <= 0) { 
+                if (remainingTime <= 0) { 
                     right_mask.style.transform = "rotate(180deg)";
                     clearInterval(funcid);
                 }
-                if (time <= 1800) {
-                    left_mask.style.transform = "rotate(" + (180 - (180 / (1800 / time))) + "deg)";
+                if (remainingTime <= 1800) {
+                    var leftRotation = (180 - (180 / (1800 / remainingTime)));
+                    left_mask.style.transform = "rotate(" + leftRotation + "deg)";
                     right_mask.style.backgroundColor = "white";
+                    right_mask.style.transform = "rotate(0deg)"
+                    mark_hand.style.transform = "rotate(" + leftRotation + "deg)"; 
                 } else {
+                    var rightRotation = (360 - (360 / (3600 / remainingTime)));
                     left_mask.style.transform = "rotate(0deg)"
                     right_mask.style.backgroundColor = "red";
-                    right_mask.style.transform = "rotate(" + (360 - (360 / (3600 / time))) + "deg)";
+                    right_mask.style.transform = "rotate(" + rightRotation + "deg)";
+                    mark_hand.style.transform = "rotate(" + (rightRotation - 180) + "deg)";
                 }
-
-                //mark_hand.style.transform = 
                 
-                time -= 1;
+                remainingTime -= 1;
             }
             
         }
@@ -72,24 +123,15 @@
         }
 
 
-        // this is the id of the form
         $("#formTimer").submit(function(e) {
 
-            e.preventDefault(); // avoid to execute the actual submit of the form.
+            e.preventDefault();
 
             var form = $(this);
 
-            makeCorsPost(form);
+            $("#remaining-time").val(remainingTime);
 
-            /*$.ajax({
-                type: "POST",
-                url: actionUrl,
-                data: form.serialize(), // serializes the form's elements.
-                success: function(data)
-                {
-                    console.log(data); // show response from the php script.
-                }
-            });*/
+            makeCorsPost(form);
 
         });
 
@@ -177,6 +219,8 @@
                 var result = JSON.parse(rq);
                 var status = xhr.status;
                 console.log("makeCorsRequest: " + status);
+
+                console.log(result);
                 
                 populateHistory(result);
 
@@ -191,7 +235,31 @@
 
 
         function populateHistory(jsondata) {
-            console.log(jsondata);
+            var table = document.getElementById('history-table').getElementsByTagName('tbody')[0];
+
+            jsondata.reverse().forEach(function(element) {
+                console.log(element);
+                const newRow = table.insertRow();
+
+                const totalColumn = newRow.insertCell(-1);
+                totalColumn.innerHTML = secondsToMinutes(parseInt(element['totalTime']));
+
+                const remainingColumn = newRow.insertCell(-1);
+                remainingColumn.innerHTML = secondsToMinutes(parseInt(element['remainingTime']));
+
+                const tagColumn = newRow.insertCell(-1);
+                tagColumn.innerHTML = element['tag'];
+            })  
+        }
+
+
+        function secondsToMinutes(seconds) {
+            var minutes = Math.floor(seconds / 60);
+            var seconds = seconds - (minutes * 60);
+
+            seconds = seconds > 9 ? "" + seconds : "0" + seconds;
+
+            return minutes + ":" + seconds;
         }
 
 
