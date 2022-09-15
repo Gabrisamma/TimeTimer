@@ -39,17 +39,17 @@ app.post('/register', fixturesUser.register);
 app.post('/login', fixturesUser.login);
 
 
+app.get('/dataget/:username', fixturesTime.GetTimesUser);
+
+app.get('/dataget/:username/:tag', fixturesTime.GetTimesUserTag);
+
+app.get('/deleteTime/:uid', fixturesTime.DeleteOneTime);
+
+
 app.post('/datapost', function(req, res){
     fixturesTime.InsertTime(res, req.body['username'], req.body['time-input'], req.body['remaining-time'], req.body['tag-input']);
 });
 
-
-
-app.get('/dataget/:username', fixturesTime.GetTimesUser);
-
-app.get('/dataget/:username/:tag', fixturesTime.GetTimesUserTag)
-
-app.get('/deleteTime/:uid', fixturesTime.DeleteOneTime);
 
 app.get('/deleteAll', fixturesTime.DeleteAllTimes);
 
