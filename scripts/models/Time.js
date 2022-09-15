@@ -1,9 +1,19 @@
 var mongoose = require('mongoose');
 
-var TimeSchema = new mongoose.Schema({
-  totalTime: Number,
-  remainingTime: Number,
-  tag: String
+const TimeSchema = new mongoose.Schema({
+    username: {
+        type: String,
+        required: true,
+    },
+    totalTime: {
+        type: Number,
+        required: true,
+    },
+    remainingTime: {
+        type: Number,
+        required: true,
+    },
+    tag: String
 });
 
 module.exports = mongoose.model('Time', TimeSchema);
